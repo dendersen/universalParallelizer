@@ -1,3 +1,4 @@
+/*
 #include <windows.h>
 
 #ifdef __cplusplus
@@ -9,7 +10,7 @@ extern "C" {
 
 typedef struct ProcessorPool {
 	int numProcessors;
-	HANDLE* processes
+	HANDLE* processes;
 } ProcessorPool_t;
 
 typedef struct ProcesseArgs {
@@ -52,3 +53,4 @@ ProcessorPool_t* createMultiProcessor(int processCount, void (*func)(ProcesseArg
 #ifdef __cplusplus
 }
 #endif
+*/

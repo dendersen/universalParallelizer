@@ -132,7 +132,6 @@
     </ClCompile>
     <ClCompile Include="parralellize_Thread.c" />
     <ClCompile Include="Parralellize_Process.c" />
-    <ClCompile Include="PythonInterface.c" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

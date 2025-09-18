@@ -29,9 +29,6 @@
     <ClCompile Include="parralellize_Thread.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="PythonInterface.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="Parralellize_Process.c">
       <Filter>Source Files</Filter>
     </ClCompile>
