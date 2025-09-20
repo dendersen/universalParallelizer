@@ -4,73 +4,10 @@
 
 #ifdef _WIN32
 #include <windows.h>
-
+/*-
 DWORD WINAPI ThreadFunction(LPVOID lpParam);
 
-Pool_t* createPool(int threadCount, void (*func)(Args_t*), void* args, void* ret) {
-	Pool_t* pool = (Pool_t*)malloc(sizeof(Pool_t));
-	if (pool == NULL) return NULL; // Memory allocation failed�
-	pool->numThreads = threadCount;
-	pool->threads = (HANDLE*)malloc(sizeof(HANDLE) * threadCount);
-	if (pool->threads == NULL) {
-		free(pool); // Clean up if allocation failed
-		return NULL;
-	}
 
-	ThreadData_t* pDataArray = (ThreadData_t*)malloc(sizeof(ThreadData_t) * threadCount);
-	if (pDataArray == NULL) {
-		free(pool->threads);
-		free(pool);
-		return NULL; // Memory allocation failed
-	}
-	
-	DWORD*		  dwThreadIdArray = (DWORD*)malloc(sizeof(DWORD) * threadCount);
-	if (dwThreadIdArray == NULL) {
-		free(pool->threads);
-		free(pool);
-		free(pDataArray);
-		return NULL; // Memory allocation failed
-	}
-	for (int i = 0; i < threadCount; i++) {
-		pDataArray[i].args = (Args_t*)malloc(sizeof(Args_t));
-		if(pDataArray[i].args == NULL) {
-			for (int j = 0; j < i; j++) {
-				free(pDataArray[j].args); // Clean up previously allocated args
-			}
-			free(pDataArray);
-			free(pool->threads);
-			free(pool);
-			return NULL; // Memory allocation failed
-		}
-		pDataArray[i].args->threadCount = threadCount;
-		pDataArray[i].args->ID = i;
-		pDataArray[i].args->args = args; // Pass the same args to all threads
-		pDataArray[i].args->ret = ret;   // Pointer to store the return value
-		pDataArray[i].func = func;        // Function to execute in the thread
-	}
-
-	for (size_t i = 0; i < threadCount; i++){
-		pool->threads[i] = CreateThread(
-			NULL,                   // default security attributes
-			0,                      // use default stack size  
-			ThreadFunction,			// thread function name
-			&pDataArray[i],			// argument to thread function 
-			0,                      // use default creation flags 
-			&dwThreadIdArray[i]		// returns the thread identifier 
-		);   
-	}
-	pool->pDataArray = pDataArray; // Store the thread data array in the pool
-	return pool; // Return the created pool
-}
-
-DWORD WINAPI ThreadFunction(LPVOID lpParam) {
-	ThreadData_t* pData = (ThreadData_t*)lpParam;
-	if (pData == NULL || pData->func == NULL || pData->args == NULL) {
-		return 1; // Error: Invalid parameters
-	}
-	pData->func(pData->args); // Execute the function and store the return value
-	return 0; // Success
-}
 
 DWORD joinPool(Pool_t* pool, DWORD WaitTime) {
 	if(WaitTime == 0) {
@@ -90,17 +27,21 @@ DWORD* destroyPool(Pool_t* pool, DWORD joinTime) {
 		}
 		CloseHandle(pool->threads[i]); // Close thread handles
 	}
-	free((&pool->pDataArray[0])->args->args);
-	free((&pool->pDataArray[0])->args->ret);
+	free(pool->pDataArray[0].args->args);
+	free(pool->pDataArray[0].args->ret);
 	for (int i = 0; i < pool->numThreads; i++) {
-		free((&(pool->pDataArray[i]))->args); // Free the args structure
+		Args_t* t = pool->pDataArray[i].args;
+		free(t); // Free the args structure
 	}
 	free(pool->pDataArray); // Free the thread data array
 	free(pool->threads); // Free the thread handles array
 	free(pool); // Free the pool structure
 	return waitResult; // Return the wait results
 }
+*/
+#endif
 
+#ifdef job_debug
 DWORD WINAPI jobManager(LPVOID lpParam) {
 	jobPool_t* jobPool = (jobPool_t*)lpParam;
 	if (jobPool == NULL) return 1; // Error: Invalid job pool
@@ -121,9 +62,10 @@ DWORD WINAPI jobManager(LPVOID lpParam) {
 				// Job finished, remove it from the list
 				jobList_t* toDelete = current;
 				current = current->next; // Move to the next job
-				free(toDelete->job->args->args); // Free the job arguments
-				free(toDelete->job->args->ret); // Free the job arguments
-				free(toDelete->job->args); // Free the job arguments
+				Args_t* t = toDelete->job->args;
+				free(t->args); // Free the job arguments
+				free(t->ret); // Free the job arguments
+				free(t); // Free the job arguments
 				if(jobPool->settings & 0b00000001) {
 					free(toDelete->jobID); // Free the job data
 				} else {
@@ -262,96 +204,43 @@ int addJobToPool(jobPool_t* jobPool, void (*func)(Args_t*), void* args, int* ID)
 	ReleaseMutex(jobPool->jobMutex); // Release the mutex after modifying the job list
 	return 0; // Success
 }
-
 #endif
 
 #ifdef __linux__
 #include <pthread.h>
 #include <time.h>
+#endif
 
-void* ThreadFunction(void* lpParam) {
-	ThreadData_t* pData = (ThreadData_t*)lpParam;
+
+#ifdef _WIN32
+DWORD WINAPI ThreadFunction(LPVOID lpParam) {
+		ThreadData_t* pData = (ThreadData_t*)lpParam;
 	if (pData == NULL || pData->func == NULL || pData->args == NULL) {
-		return (void*)1; // Error: Invalid parameters
+		return 1; // Error: Invalid parameters
 	}
 	pData->func(pData->args); // Execute the function and store the return value
 	return 0; // Success
 }
-
-Pool_t* createPool(int threadCount, void (*func)(Args_t*), void* args, void* ret){
-	Pool_t* pool = (Pool_t*)malloc(sizeof(Pool_t));
-	if (pool == NULL) goto fail_allocate_pool; // Memory allocation failed
-	
-	pool->numThreads = threadCount;
-	pool->threads = (pthread_t*)malloc(sizeof(pthread_t) * threadCount);
-	if (pool->threads == NULL) goto fail_allocate_threads;
-	
-	pool->pDataArray = (ThreadData_t*)malloc(sizeof(ThreadData_t) * threadCount);
-	if (pool->pDataArray == NULL) goto fail_allocate_pDataArray;
-
-	ThreadData_t* pDataArray = (ThreadData_t*)malloc(sizeof(ThreadData_t) * threadCount);
-
-	for (int i = 0; i < threadCount; i++) {
-		pDataArray[i].args = (Args_t*)malloc(sizeof(Args_t));
-		if(pDataArray[i].args == NULL) {
-			for (int j = 0; j < i; j++) {
-				free(pDataArray[j].args); // Clean up previously allocated args
-			}
-			goto fail_allocate_threads; // Memory allocation failed
-		}
-		pDataArray[i].args->threadCount = threadCount;
-		pDataArray[i].args->ID = i;
-		pDataArray[i].args->args = args; // Pass the same args to all threads
-		pDataArray[i].args->ret = ret;   // Pointer to store the return value
-		pDataArray[i].func = func;        // Function to execute in the thread
+#endif
+#ifdef __linux__
+void* ThreadFunction(void* lpParam) {
+	ThreadData_t* pData = (ThreadData_t*)lpParam;
+	if (pData == NULL || pData->func == NULL || pData->args == NULL) {
+		return 1; // Error: Invalid parameters
 	}
-
-
-	for (size_t i = 0; i < threadCount; i++){
-		pool->threads[i] = pthread_create(
-			&pool->threads[i], // Pointer to the thread handle
-			NULL,               // Default thread attributes
-			(ThreadFunction),  // Thread function
-			&pDataArray[i]     // Argument to the thread function
-		);   
-	}
-	pool->pDataArray = pDataArray; // Store the thread data array in the pool
-	return pool; // Return the created pool
-
-	fail_allocate_threads:
-		free(pDataArray);
-	fail_allocate_pDataArray:
-		free(pool->threads);
-	fail_allocate_threads:
-		free(pool); 
-	fail_allocate_pool:
-		return NULL; // Return NULL on failure
+	pData->func(pData->args); // Execute the function and store the return value
+	return 0; // Success
 }
+#endif
 
-int joinPool(Pool_t* pool, int WaitTime) {
-	int out = 0;
-	for(int i = 0; i < pool->numThreads; i++) {
-		if(pthread_join(pool->threads[i], NULL)){
-			out++; // Error joining thread
-		}
-	}
-	return out;
-}
-
-/*
-* this does not support timed joins
-*/
-int* destroyPool(Pool_t* pool, int joinTime) {
+int* destroyPool(Pool_t* pool) {
 	int* waitResult = (int*)malloc(sizeof(int) * pool->numThreads);
 	if (waitResult == NULL) return NULL; // Memory allocation failed
 
-	if(joinTime == 0) {
-		joinTime = -1; // Default to wait indefinitely if no time is specified
-	}
-
 	for (int i = 0; i < pool->numThreads; i++) {
-		if (joinTime) {
-			waitResult[i] = pthread_join(pool->threads[i], NULL); // Wait for each thread to finish
+		waitResult[i] = joinUthread(pool->threads[i]); // Wait for each thread to finish
+		if(waitResult[i] == 0) {
+			closeUthread(pool->threads[i]); // Close thread handles
 		}
 	}
 
@@ -366,6 +255,61 @@ int* destroyPool(Pool_t* pool, int joinTime) {
 	return waitResult; // Return the wait results
 }
 
+int joinPool(Pool_t* pool, int WaitTime) {
+	int out = 0;
+	for(int i = 0; i < pool->numThreads; i++) {
+		if(joinUthread(pool->threads[i])){
+			out++; // Error joining thread
+		}else{
+			closeUthread(pool->threads[i]); // Close thread handle
+		}
+	}
+	return out;
+}
+
+Pool_t* createPool(int threadCount, void (*func)(Args_t*), void* args, void* ret) {
+	Pool_t* pool = (Pool_t*)malloc(sizeof(Pool_t));
+	if (pool == NULL) goto fail_allocate_pool; // Memory allocation failed
+	
+	pool->numThreads = threadCount;
+	pool->threads = (Uthread_t*)malloc(sizeof(Uthread_t) * threadCount);
+	if (pool->threads == NULL) goto fail_allocate_threads;
+
+	ThreadData_t* pDataArray = (ThreadData_t*)malloc(sizeof(ThreadData_t) * threadCount);
+	if (pDataArray == NULL) goto fail_allocate_pDataArray;
+	for (int i = 0; i < threadCount; i++) {
+		pDataArray[i].args = (Args_t*)malloc(sizeof(Args_t));
+		if(pDataArray[i].args == NULL) {
+			for (int j = 0; j < i; j++) {
+				free(pDataArray[j].args); // Clean up previously allocated args
+			}
+			goto fail_create_threads; // Memory allocation failed
+		}
+		pDataArray[i].args->threadCount = threadCount;
+		pDataArray[i].args->ID = i;
+		pDataArray[i].args->args = args; // Pass the same args to all threads
+		pDataArray[i].args->ret = ret;   // Pointer to store the return value
+		pDataArray[i].func = func;        // Function to execute in the thread
+	}
+
+
+	for (size_t i = 0; i < threadCount; i++){
+		createUthread(pool->threads[i],ThreadFunction,&pDataArray[i]); 
+	}
+	pool->pDataArray = pDataArray; // Store the thread data array in the pool
+	return pool; // Return the created pool
+
+	fail_create_threads:
+		free(pDataArray);
+	fail_allocate_pDataArray:
+		free(pool->threads);
+	fail_allocate_threads:
+		free(pool); 
+	fail_allocate_pool:
+		return NULL; // Return NULL on failure
+}
+
+#ifdef job_debug
 int jobManager(void* lpParam) {
 	int error = 0;
 	jobPool_t* jobPool = (jobPool_t*)lpParam;

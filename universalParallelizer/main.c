@@ -1,6 +1,7 @@
 #include "parralellize.h"
 #include "parralellize_Thread.h"
 #include <assert.h>
+#include <stdlib.h>
 #include <stdio.h>
 #include <time.h>
 
@@ -26,22 +27,22 @@ void parallel_add(Args_t* arg) {
 }
 
 int main(){
-	size_t size = 1000000000; // ~1.5 billion elements in one second ish
-	size_t* src1 = (size_t*)malloc(size * sizeof(size_t));
+	long long size = 1000000000; // ~1.5 billion elements in one second ish
+	long long* src1 = (long long*)malloc(size * sizeof(long long));
 	if (!src1) return -1; // Check for memory allocation failure
-	size_t* src2 = (size_t*)malloc(size * sizeof(size_t));
+	long long* src2 = (long long*)malloc(size * sizeof(long long));
 	if( !src2) {
 		free(src1); // Free previously allocated memory before returning
 		return -1; // Check for memory allocation failure
 	}
-	size_t* dst = (size_t*)malloc(size * sizeof(size_t));
+	long long* dst = (long long*)malloc(size * sizeof(long long));
 	if( !dst) {
 		free(src1); // Free previously allocated memory before returning
 		free(src2);
 		return -1; // Check for memory allocation failure
 	}
 
-	for (size_t i = 0; i < size; i++) {
+	for (long long i = 0; i < size; i++) {
 		src1[i] = i;
 		src2[i] = i * 2;
 		dst[i] = 0;
@@ -50,15 +51,15 @@ int main(){
 	clock_t begin = clock();
 
 	Pool_t* pool = createPool(4, parallel_add, (void* []) { (void*)src1, (void*)src2, (void*)&size }, dst);
-	DWORD res = joinPool(pool,0);
+	int res = joinPool(pool,0);
 	
 	clock_t end = clock();
 
 	if(res != 0) {
-		printf("Thread pool failed with error code %lu\n", res);
+		printf("Thread pool failed with error code %d\n", res);
 	}
 	
-	for (size_t i = 0; i < size; i++) {
+	for (long long i = 0; i < size; i++) {
 		if (dst[i] != i * 3) {
 			printf("Error at index %lld: expected %lld, got %lld\n", i, i * 3, dst[i]);
 		}
