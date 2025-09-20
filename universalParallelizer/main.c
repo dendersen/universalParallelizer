@@ -9,6 +9,8 @@
 extern "C" {
 #endif
 
+//compiling in linux terminal gcc main.c parralellize.h parralellize_Thread.h parralellize_Thread.c
+
 void parallel_add(Args_t* arg) {
 
 	size_t* src1 = ((size_t**)arg->args)[0];

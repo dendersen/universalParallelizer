@@ -226,10 +226,10 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam) {
 void* ThreadFunction(void* lpParam) {
 	ThreadData_t* pData = (ThreadData_t*)lpParam;
 	if (pData == NULL || pData->func == NULL || pData->args == NULL) {
-		return 1; // Error: Invalid parameters
+		return (void*)1; // Error: Invalid parameters
 	}
 	pData->func(pData->args); // Execute the function and store the return value
-	return 0; // Success
+	return (void*)0; // Success
 }
 #endif
 
@@ -267,7 +267,7 @@ int joinPool(Pool_t* pool, int WaitTime) {
 	return out;
 }
 
-Pool_t* createPool(int threadCount, void (*func)(Args_t*), void* args, void* ret) {
+Pool_t* createPool(int threadCount, void (func)(Args_t*), void* args, void* ret) {
 	Pool_t* pool = (Pool_t*)malloc(sizeof(Pool_t));
 	if (pool == NULL) goto fail_allocate_pool; // Memory allocation failed
 	
