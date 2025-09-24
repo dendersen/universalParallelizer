@@ -29,33 +29,43 @@ void parallel_add(Args_t* arg) {
 }
 
 int main(){
-	long long size = 1000000000; // ~1.5 billion elements in one second ish
+	printf("intializing:\n");
+	long long size = 1000000; // ~1.5 billion elements in one second ish
+	printf("\tmalloc src1\n");
 	long long* src1 = (long long*)malloc(size * sizeof(long long));
-	if (!src1) return -1; // Check for memory allocation failure
+	if (!src1){ // Check for memory allocation failure
+		printf("failed\n");
+		return -1;
+	}
+	printf("\tmalloc src2\n");
 	long long* src2 = (long long*)malloc(size * sizeof(long long));
 	if( !src2) {
+		printf("failed\n");
 		free(src1); // Free previously allocated memory before returning
 		return -1; // Check for memory allocation failure
 	}
+	printf("\tmalloc dst\n");
 	long long* dst = (long long*)malloc(size * sizeof(long long));
 	if( !dst) {
+		printf("failed\n");
 		free(src1); // Free previously allocated memory before returning
 		free(src2);
 		return -1; // Check for memory allocation failure
 	}
-
+	printf("\tarray contents\n");
 	for (long long i = 0; i < size; i++) {
 		src1[i] = i;
 		src2[i] = i * 2;
 		dst[i] = 0;
 	}
 
+	printf("starting program\n");
 	clock_t begin = clock();
-
 	Pool_t* pool = createPool(4, parallel_add, (void* []) { (void*)src1, (void*)src2, (void*)&size }, dst);
+	printf("\tprogram started\n");
 	int res = joinPool(pool,0);
-	
 	clock_t end = clock();
+	printf("program done\n");
 
 	if(res != 0) {
 		printf("Thread pool failed with error code %d\n", res);
