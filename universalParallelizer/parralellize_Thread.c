@@ -255,7 +255,7 @@ int* destroyPool(Pool_t* pool) {
 	return waitResult; // Return the wait results
 }
 
-int joinPool(Pool_t* pool, int WaitTime) {
+int joinPool(Pool_t* pool) {
 	int out = 0;
 	for(int i = 0; i < pool->numThreads; i++) {
 		if(joinUthread(pool->threads[i])){

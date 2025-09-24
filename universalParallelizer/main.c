@@ -63,7 +63,7 @@ int main(){
 	clock_t begin = clock();
 	Pool_t* pool = createPool(4, parallel_add, (void* []) { (void*)src1, (void*)src2, (void*)&size }, dst);
 	printf("\tprogram started\n");
-	int res = joinPool(pool,0);
+	int res = joinPool(pool);
 	clock_t end = clock();
 	printf("program done\n");
 
