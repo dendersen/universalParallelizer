@@ -59,3 +59,63 @@ int joinPool(Pool_t* pool);
 this runs very simply, provide the correct pool and once the function ends you can asume that the pool is done processsing.
 
 it is a good idea to check the return value as any non zero value indicates that something went wrong while looking into the threads and the output may no be correct
+
+## destroy Pool
+
+this will both wait for the pool to finish and then free all memory used by the pool
+generally this should be the last thing you do with a pool
+
+``` C
+
+int* destroyPool(Pool_t* pool);
+
+```
+
+it will return a pointer to an array of RAW return values from the threads, these are specific to the operating system
+
+# Uthread system
+
+aside from adding the pool this library also adds a custom universal thread system
+
+this is a very basic thread system that is designed to linearly map to the underlying operating system threading system to provide a universal interface
+
+it is not designed to be a full threading library, but rather a simple way to create and manage threads in a universal way
+
+## create thread
+
+to create a thread simply use this macro
+
+``` C
+
+#define createUthread(dst,func,arg)
+
+```
+
+this will create a thread that runs the function "func" with the argument "arg"
+the thread pointer/handle will be stored in "dst"
+
+## join thread
+
+to join a thread simply use this macro
+
+``` C
+
+#define joinUthread(thread)
+
+```
+
+this will block the current thread until the provided thread is done executing
+
+## close thread
+
+to end the execution of a thread and alow the freeing of resources use this macro
+
+``` C
+
+#define closeUthread(thread) CloseHandle(thread)
+
+```
+
+this will end the thread and free all resources the thread used
+
+this will not free the memory used by the thread handle/pointer, or the data provided to the thread
