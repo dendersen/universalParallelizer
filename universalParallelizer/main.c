@@ -83,6 +83,8 @@ int main(){
 	printf("Time taken: %.4lf seconds\n", spent);
 	printf("Throughput: %.4lf operations/second\n", size / spent);
 
+	destroyPool(pool);
+
 	return 0;
 }
 
