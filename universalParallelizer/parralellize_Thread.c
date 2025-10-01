@@ -9,6 +9,10 @@
 #ifdef __linux__
 #include <pthread.h>
 #endif
+#ifdef __linux__
+#include <pthread.h>
+#endif
+
 
 #ifdef job_debug
 DWORD WINAPI jobManager(LPVOID lpParam) {
