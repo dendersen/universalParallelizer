@@ -119,3 +119,10 @@ to end the execution of a thread and alow the freeing of resources use this macr
 this will end the thread and free all resources the thread used
 
 this will not free the memory used by the thread handle/pointer, or the data provided to the thread
+
+## thread pointer
+
+for a thread pointer use the type "Uthread_t"
+this is a universal type that maps to the underlying operating system thread pointer/handle type
+
+for most (if not all) functions that use a Uthread, please don't use the pointer unless need to send more than one thread at a time

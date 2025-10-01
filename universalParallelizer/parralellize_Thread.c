@@ -2,43 +2,12 @@
 #include "parralellize_Thread.h"
 #include "parralellize.h"
 
+//imports
 #ifdef _WIN32
 #include <windows.h>
-/*-
-DWORD WINAPI ThreadFunction(LPVOID lpParam);
-
-
-
-DWORD joinPool(Pool_t* pool, DWORD WaitTime) {
-	if(WaitTime == 0) {
-		WaitTime = INFINITE; // Default to wait indefinitely if no time is specified
-	}
-	DWORD waitResult = WaitForMultipleObjects(pool->numThreads, pool->threads, TRUE, WaitTime);
-	return waitResult;// Success
-}
-
-DWORD* destroyPool(Pool_t* pool, DWORD joinTime) {
-	DWORD* waitResult = (DWORD*)malloc(sizeof(DWORD) * pool->numThreads);
-	if (waitResult == NULL) return NULL; // Memory allocation failed
-
-	for (int i = 0; i < pool->numThreads; i++) {
-		if (joinTime) {
-			waitResult[i] = WaitForSingleObject(pool->threads[i], joinTime); // Wait for each thread to finish
-		}
-		CloseHandle(pool->threads[i]); // Close thread handles
-	}
-	free(pool->pDataArray[0].args->args);
-	free(pool->pDataArray[0].args->ret);
-	for (int i = 0; i < pool->numThreads; i++) {
-		Args_t* t = pool->pDataArray[i].args;
-		free(t); // Free the args structure
-	}
-	free(pool->pDataArray); // Free the thread data array
-	free(pool->threads); // Free the thread handles array
-	free(pool); // Free the pool structure
-	return waitResult; // Return the wait results
-}
-*/
+#endif
+#ifdef __linux__
+#include <pthread.h>
 #endif
 
 #ifdef job_debug
@@ -175,10 +144,6 @@ int addJobToPool(jobPool_t* jobPool, void (*func)(Args_t*), void* args, int* ID)
 				current = current->next; // Move to the next job
 			}
 		}
-		if(!found) {
-			*ID = id; // Set the job ID
-			break; // Exit the loop if an available ID is found
-		}
 		current =jobPool->jobList; // Reset current to the start of the list
 	}
 	jobPool->jobCount++; // Increment job count
@@ -211,7 +176,7 @@ int addJobToPool(jobPool_t* jobPool, void (*func)(Args_t*), void* args, int* ID)
 #include <time.h>
 #endif
 
-
+//thread function
 #ifdef _WIN32
 DWORD WINAPI ThreadFunction(LPVOID lpParam) {
 		ThreadData_t* pData = (ThreadData_t*)lpParam;
@@ -244,10 +209,13 @@ int* destroyPool(Pool_t* pool) {
 		}
 	}
 
-	free((&pool->pDataArray[0])->args->args);
-	free((&pool->pDataArray[0])->args->ret);
 	for (int i = 0; i < pool->numThreads; i++) {
-		free((&(pool->pDataArray[i]))->args); // Free the args structure
+        for (int i = 0; i < pool->numThreads; i++) {
+            if ((&(pool->pDataArray[i]))->args != NULL) {
+                free((&(pool->pDataArray[i]))->args); // Free the args structure
+                (&(pool->pDataArray[i]))->args = NULL; // Optional: avoid dangling pointer
+            }
+        }
 	}
 	free(pool->pDataArray); // Free the thread data array
 	free(pool->threads); // Free the thread handles array
