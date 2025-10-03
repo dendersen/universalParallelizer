@@ -1,5 +1,9 @@
 #pragma once
 
+Pool_t* createPool(int threadCount, void (func)(Args_t*), void* args, void* ret);
+int joinPool(Pool_t* pool);
+int* destroyPool(Pool_t* pool);
+
 #ifdef _WIN32
 #include <windows.h>
 typedef HANDLE Uthread_t;

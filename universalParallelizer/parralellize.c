@@ -1,5 +1,4 @@
 #include <stdlib.h>
-#include "parralellize_Thread.h"
 #include "parralellize.h"
 
 //imports
